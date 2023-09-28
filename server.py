@@ -36,6 +36,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
         response += "<html><body><h1>404 Not Found</h1></body></html>" #this will provide an HTML webpage indicating the 404
         self.request.sendall(response.encode("utf-8"))
 
+    def send_405(self):
+        response = f"HTTP/1.1 405 Method Not Allowed\r\n"
+        response += f"Allow: GET\r\n\r\n"
+        response += "405 Method Not Allowed: The request method is not allowed for the requested resource."
+
+        self.request.sendall(response.encode("utf-8"))
+
     def send_301_redirect(self, new_location):
         response = f"HTTP/1.1 301 Moved Permanently\r\nLocation: {new_location}\r\n\r\n"
         self.request.sendall(response.encode("utf-8"))
@@ -71,10 +78,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}")
 
         #TODO: maybe wrap in "if get request"
+        if method != "GET":
+            self.send_405()
+            return
 
         # Don't let users traverse upstream
         if ".." in path:
             self.send_404()
+            return
 
         #Check if file exists, and serve it if it does
         try:
