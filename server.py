@@ -65,13 +65,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}")
 
         #TODO: maybe wrap in "if get request"
-        if path == "/deep":
-            print("ATTEMPTING REDIRECT")
-            # Redirect to the URL with a trailing slash
-            new_location = f"http://{self.server.server_address[0]}:{self.server.server_address[1]}/deep/"
-            print(f"NEW LOCATION: {new_location}")
-            self.send_301_redirect(new_location)
-            return
 
         #Check if file exists, and serve it if it does
         try:
@@ -85,6 +78,15 @@ class MyWebServer(socketserver.BaseRequestHandler):
             self.request.sendall(response.encode("utf-8"))
             
         except IsADirectoryError:
+            if not path.endswith("/"):
+                print("ATTEMPTING REDIRECT")
+                # Redirect to the URL with a trailing slash
+                new_location = f"http://{self.server.server_address[0]}:{self.server.server_address[1]}{path}/"
+                print(f"NEW LOCATION: {new_location}")
+                self.send_301_redirect(new_location)
+                return
+
+
             #serve the webpage located inside the directory
             #TODO: should I maybe make sure this internal index.html exists?
             index_file = os.path.join(requested_file_path, "index.html")
