@@ -30,6 +30,10 @@ import os
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
+    def send_301_redirect(self, new_location):
+        response = f"HTTP/1.1 301 Moved Permanently\r\nLocation: {new_location}\r\n\r\n"
+        self.request.sendall(response.encode("utf-8"))
+
     def sendFile(self, filepath):
         #send the contents of a file back to the web browser user
         #assume the file exists
@@ -61,6 +65,13 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}")
 
         #TODO: maybe wrap in "if get request"
+        if path == "/deep":
+            print("ATTEMPTING REDIRECT")
+            # Redirect to the URL with a trailing slash
+            new_location = f"http://{self.server.server_address[0]}:{self.server.server_address[1]}/deep/"
+            print(f"NEW LOCATION: {new_location}")
+            self.send_301_redirect(new_location)
+            return
 
         #Check if file exists, and serve it if it does
         try:
