@@ -36,9 +36,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         #create response for successful http and css files
         response = "HTTP/1.1 200 OK\r\n"
-        if filepath.split('.')[-1] == ".css": response = response + "Content-Type: text/css"
-        elif filepath.split('.')[-1] == ".html": response = response + "Content-Type: text/html"
+        if filepath.endswith(".css"): response = response + "Content-Type: text/css"
+        elif filepath.endswith(".html"): response = response + "Content-Type: text/html"
         response = response + "\r\n\r\n"
+        print(f"Response: {repr(response)}")
         
         #read and send file content
         with open(filepath, "rb") as file: response += file.read().decode("utf-8")
@@ -48,7 +49,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s" % self.data)
+        print ("\nGot a request of: %s" % self.data)
         #self.request.sendall(bytearray("OK",'utf-8'))
 
         #parse & print the request
@@ -57,7 +58,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         method, path, protocol = line.split()
         requested_file_path = os.path.join("www/", path.lstrip("/"))
         requested_file_path = os.path.realpath(requested_file_path)
-        print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}\n")
+        print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}")
 
         #TODO: maybe wrap in "if get request"
 
@@ -65,24 +66,21 @@ class MyWebServer(socketserver.BaseRequestHandler):
         try:
             with open(requested_file_path) as file:
                 self.sendFile(requested_file_path)
-                #serve the file
-                #self.serveFile(file, requested_file_path)
-                pass
+
         except FileNotFoundError:
             #return a 404 error
-            pass
+            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n"
+            response += "<html><body><h1>404 Not Found</h1></body></html>" #this will provide an HTML webpage indicating the 404
+            self.request.sendall(response.encode("utf-8"))
+            
         except IsADirectoryError:
-            #serve the webpage
+            #serve the webpage located inside the directory
+            #TODO: should I maybe make sure this internal index.html exists?
             index_file = os.path.join(requested_file_path, "index.html")
             self.sendFile(index_file)
-            #if exists:
-            
-            return
-
-        #interpret the request, decide what to serve (could be a file, response code, (webpage?))
 
 if __name__ == "__main__":
-    HOST, PORT = "localhost", 8081 #TODO: Fix this
+    HOST, PORT = "localhost", 8080
 
     socketserver.TCPServer.allow_reuse_address = True
     # Create the server, binding to localhost on port 8080
