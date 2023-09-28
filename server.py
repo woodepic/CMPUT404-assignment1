@@ -30,6 +30,12 @@ import os
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
+    def send_404(self):
+        #return a 404 error
+        response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n"
+        response += "<html><body><h1>404 Not Found</h1></body></html>" #this will provide an HTML webpage indicating the 404
+        self.request.sendall(response.encode("utf-8"))
+
     def send_301_redirect(self, new_location):
         response = f"HTTP/1.1 301 Moved Permanently\r\nLocation: {new_location}\r\n\r\n"
         self.request.sendall(response.encode("utf-8"))
@@ -66,16 +72,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         #TODO: maybe wrap in "if get request"
 
+        # Don't let users traverse upstream
+        if ".." in path:
+            self.send_404()
+
         #Check if file exists, and serve it if it does
         try:
             with open(requested_file_path) as file:
                 self.sendFile(requested_file_path)
 
         except FileNotFoundError:
-            #return a 404 error
-            response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n"
-            response += "<html><body><h1>404 Not Found</h1></body></html>" #this will provide an HTML webpage indicating the 404
-            self.request.sendall(response.encode("utf-8"))
+            self.send_404()
             
         except IsADirectoryError:
             if not path.endswith("/"):
