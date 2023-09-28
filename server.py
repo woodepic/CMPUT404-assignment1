@@ -27,6 +27,10 @@ import os
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 
+# References:
+# This program was made using assistance from chatGPT, largely for syntax, and basic usage of packages.
+
+
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
