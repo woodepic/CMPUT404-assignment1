@@ -29,13 +29,29 @@ import os
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+
+    def sendFile(self, filepath):
+        #send the contents of a file back to the web browser user
+        #assume the file exists
+
+        #create response for successful http and css files
+        response = "HTTP/1.1 200 OK\r\n"
+        if filepath.split('.')[-1] == ".css": response = response + "Content-Type: text/css"
+        elif filepath.split('.')[-1] == ".html": response = response + "Content-Type: text/html"
+        response = response + "\r\n\r\n"
+        
+        #read and send file content
+        with open(filepath, "rb") as file: response += file.read().decode("utf-8")
+
+        #send the http response to the user
+        self.request.sendall(response.encode("utf-8"))
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s" % self.data)
         #self.request.sendall(bytearray("OK",'utf-8'))
 
-        #parse the request
+        #parse & print the request
         lines = self.data.decode("utf-8").split("\n")
         line = lines[0]
         method, path, protocol = line.split()
@@ -43,11 +59,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
         requested_file_path = os.path.realpath(requested_file_path)
         print(f"Method: {method}\nPath: {path}\nRequested File Path: {requested_file_path}\nProtocol: {protocol}\n")
 
-        #maybe wrap in "if get request"
+        #TODO: maybe wrap in "if get request"
 
         #Check if file exists, and serve it if it does
         try:
             with open(requested_file_path) as file:
+                self.sendFile(requested_file_path)
                 #serve the file
                 #self.serveFile(file, requested_file_path)
                 pass
@@ -57,15 +74,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
         except IsADirectoryError:
             #serve the webpage
             index_file = os.path.join(requested_file_path, "index.html")
+            self.sendFile(index_file)
             #if exists:
-            response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
-            # Read and send the index.html file content
-            with open(index_file, "rb") as file:
-                response += file.read().decode("utf-8")
-            self.request.sendall(response.encode("utf-8"))
+            
             return
-
-
 
         #interpret the request, decide what to serve (could be a file, response code, (webpage?))
 
